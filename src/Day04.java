@@ -1,7 +1,6 @@
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Arrays.stream;
 
@@ -19,12 +18,19 @@ public class Day04 {
 //        int[] password = new int[] {2,8,4,6,3,9};
 //        int[] password = new int[] {7,4,8,7,5,9};
 
-        int counter = 0;
+        int counter1 = 0;
+        int counter2 = 0;
         while (password < max) {
             int[] intPassword = transformToIntArray(password);
             if (isInOrderAscOrEqual(intPassword)) {
-                if (hasConsecutive(intPassword)) counter++;
-                System.out.println(password);
+                if (matchSecond(intPassword)) {
+//                    System.out.println(password);
+                    counter2++;
+                }
+                if (hasConsecutive(intPassword)) {
+//                    System.out.println(password);
+                    counter1++;
+                }
                 password++;
             } else {
                 for (int i = 0 ; i < intPassword.length -1; i++) {
@@ -40,7 +46,8 @@ public class Day04 {
                 System.out.println("Reset to the first number correct");
             }
         }
-        System.out.println(counter);
+        System.out.println(counter1);
+        System.out.println(counter2);
 
 
     }
@@ -53,7 +60,19 @@ public class Day04 {
     }
 
     private static boolean matchSecond(int[] password) {
-       return false;
+        Map<Integer, Integer> values = new HashMap<>();
+        for (int i = 0; i < password.length -1; i++) {
+            int counter = 1;
+            int j = i+1;
+            while (i + counter < password.length && password[i] == password[i + counter]) {
+                counter++;
+            }
+            if (!values.containsKey(password[i]) || values.get(password[i]) < counter) {
+                values.put(password[i], counter);
+            }
+        }
+        List<Integer> collect = values.keySet().stream().filter(key -> values.get(key) == 2).collect(Collectors.toList());
+        return collect.size() > 0;
     }
 
     private static int[] transformToIntArray(int password){
