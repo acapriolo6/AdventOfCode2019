@@ -1,6 +1,7 @@
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+
+import static java.lang.Math.abs;
 
 public class Day03 {
 
@@ -10,17 +11,26 @@ public class Day03 {
 
         ReadFile readFile = new ReadFile();
         int i = 0;
-        String[][] frontPanel = new String[size][size];
-        initPanel(frontPanel);
-//        printPanel(frontPanel);
+        List<Set<Point>> segments = new ArrayList<>();
         for (String line : readFile.readFromInputStream()) {
             List<Step> steps = readSteps(line);
-            writeSteps(frontPanel, steps);
-//            printPanel(frontPanel);
+            Set<Point> path = new HashSet<>();
+            writeSteps(path, steps);
+            segments.add(path);
             System.out.println("Test");
         }
-        int manhattanDistance = calculateManhattanDistance(frontPanel);
-        System.out.println(manhattanDistance);
+        segments.get(0).retainAll(segments.get(1));
+        Point point = segments.get(0).stream().filter(it -> !it.equals(new Point(0,0))).sorted((a, b) -> comparePoint(a, b)).findFirst().orElse(new Point(0, 0));
+        System.out.println(calculateDistance(point));
+    }
+    private static int calculateDistance(Point a) {
+        return abs(a.x) + abs(a.y);
+    }
+
+    private static int comparePoint(Point a, Point b) {
+        if (calculateDistance(a) > calculateDistance(b) ) return 1;
+        else if (calculateDistance(a) < calculateDistance(b) ) return -1;
+        return 0;
     }
 
     private static List<Step> readSteps(String line) {
@@ -32,97 +42,40 @@ public class Day03 {
         return steps;
     }
 
-    private static void initPanel(String[][] frontPanel){
-        for (int i = 0; i < frontPanel.length; i++) {
-            for (int j = 0; j < frontPanel[i].length; j++)
-                frontPanel[i][j] = ".";
-        }
-    }
-
-
-    private static void writeSteps(String[][] frontPanel,List<Step> steps) {
-//        int startPointI = size -2 , startPointJ = 1;
-//        int pointerI = startPointI;
-//        int pointerJ = startPointJ;
+    private static void writeSteps(Set<Point> path, List<Step> steps) {
         int startPoint = 0;
         int pointerI = startPoint;
         int pointerJ = startPoint;
         for (Step step: steps) {
-            int i,j;
+            int startY = pointerJ;
+            int startX = pointerI;
             switch (step.direction){
-                case "D":
-                    i = pointerI + 1;j = pointerJ;
-                    pointerI += step.stepNumber;
-                    while (i <= pointerI) {
-                        if (!frontPanel[i][pointerJ].equals(".")) {
-                            frontPanel[i][pointerJ] = "X";
-                        } else {
-                            frontPanel[i][pointerJ] = "|";
-                        }
-                        i++;
+                case "U":
+                    pointerJ += step.stepNumber;
+                    while (startY <= pointerJ) {
+                        path.add(new Point(startX, startY++));
                     }
                     break;
-                case "U":
-                    i = pointerI - 1;j = pointerJ;
-                    pointerI -= step.stepNumber;
-                    while (i >= pointerI) {
-                        if (!frontPanel[i][pointerJ].equals(".")) {
-                            frontPanel[i][pointerJ] = "X";
-                        } else {
-                            frontPanel[i][pointerJ] = "|";
-                        }
-                        i--;
+                case "D":
+                    pointerJ -= step.stepNumber;
+                    while (startY >= pointerJ) {
+                        path.add(new Point(startX, startY--));
                     }
                     break;
                 case "L":
-                    i = pointerI;j = pointerJ - 1;
-                    pointerJ -= step.stepNumber;
-                    while (j >= pointerJ) {
-                        if (!frontPanel[pointerI][j].equals(".")) {
-                            frontPanel[pointerI][j] = "X";
-                        } else {
-                            frontPanel[pointerI][j] = "-";
-                        }
-                        j--;
+                    pointerI -= step.stepNumber;
+                    while (startX >= pointerI) {
+                        path.add(new Point(startX--, startY));
                     }
                     break;
                 case "R":
-                    i = pointerI;j = pointerJ + 1;
-                    pointerJ += step.stepNumber;
-                    while (j <= pointerJ) {
-                        if (!frontPanel[pointerI][j].equals(".")) {
-                            frontPanel[pointerI][j] = "X";
-                        } else {
-                            frontPanel[pointerI][j] = "-";
-                        }
-                        j++;
+                    pointerI += step.stepNumber;
+                    while (startX <= pointerI) {
+                        path.add(new Point(startX++, startY));
                     }
                     break;
             }
         }
-    }
-
-    private static void printPanel(String[][] frontPanel){
-        for (int i = 0; i < frontPanel.length; i++) {
-            for (int j = 0; j < frontPanel[i].length; j++)
-                System.out.print(frontPanel[i][j] + " ");
-            System.out.println("");
-        }
-    }
-
-    private static int calculateManhattanDistance(String[][] frontPanel) {
-        int lessX = size, lessY = size;
-        int startPoint = 0;
-        for (int i = 0; i < frontPanel.length; i++) {
-            for (int j = 0; j < frontPanel[i].length; j++)
-                if (frontPanel[i][j].equals("X")) {
-                    if (i + j < lessX + lessY) {
-                        lessX = i;
-                        lessY = j;
-                    }
-                }
-        }
-        return lessX + lessY;
     }
 
     static class Step{
@@ -152,6 +105,40 @@ public class Day03 {
 
         public void setStepNumber(int stepNumber) {
             this.stepNumber = stepNumber;
+        }
+    }
+
+    static class Segment {
+        Point startPoint;
+        Point endPoint;
+
+        public Segment(int startX, int startY, int endX, int endY) {
+            this.startPoint = new Point(startX, startY);
+            this.endPoint = new Point(endX, endY);
+        }
+    }
+
+    static class Point{
+        int x;
+        int y;
+
+        public Point(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Point point = (Point) o;
+            return x == point.x &&
+                    y == point.y;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(x, y);
         }
     }
 }
